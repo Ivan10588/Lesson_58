@@ -90,5 +90,49 @@ def delete_item(item_id):
     save_data(data)
     return '', 204
 
+@app.route('/items/filter', methods=['GET'])
+def filter_items():
+    min_price_str = request.args.get('min_price')
+    max_price_str = request.args.get('max_price')
+    search_term = request.args.get('search')
+
+    min_price = None
+    if min_price_str:
+        try:
+            min_price = float(min_price_str)
+        except ValueError:
+            return jsonify({'error': 'min_price must be a number'}), 400
+
+    max_price = None
+    if max_price_str:
+        try:
+            max_price = float(max_price_str)
+        except ValueError:
+            return jsonify({'error': 'max_price must be a number'}), 400
+
+    all_items = load_data()
+
+    filtered_items = []
+    for item in all_items:
+        price = item.get('price', 0)
+        name_lower = item.get('name', '').lower()
+        desc_lower = item.get('description', '').lower()
+
+        if min_price is not None and price < min_price:
+            continue
+
+        if max_price is not None and price > max_price:
+            continue
+
+        if search_term:
+            search_lower = search_term.lower()
+            if search_lower not in name_lower and search_lower not in desc_lower:
+                continue
+
+        filtered_items.append(item)
+
+    return jsonify(filtered_items), 200
+
+
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
